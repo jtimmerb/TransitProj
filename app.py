@@ -56,8 +56,8 @@ class App:
     def set_train(self, train):
         self.train = train
 
-    def start_app(self):
-        schedule.every(2).seconds.do(self.background_job)
+    def start_update(self):
+        schedule.every(2).seconds.do(self.update_train)
         # Start the background thread
         self.stop_run_continuously = self.run_continuously()
 
@@ -89,6 +89,6 @@ class App:
         continuous_thread.start()
         return cease_continuous_run
 
-    def background_job(self):
+    def update_train(self):
         feed = self.handler.get_feed(self.train)
         print(feed[0])
