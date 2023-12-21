@@ -1,4 +1,7 @@
 from nyct_gtfs import NYCTFeed
+import threading
+import schedule
+import time
 
 
 class TrainGroup:
@@ -8,7 +11,29 @@ class TrainGroup:
 
 
 class MTASubwayFeedHandler:
-    def __init__(self, API_KEY, TRAINS, APIS):
+    def __init__(self):
+        API_KEY = "MsGGWvRfMp2sunZAbEHnb7ZkXkIlDCw72fK8KTmc"
+
+        TRAINS = [
+            ["A", "C", "E"],
+            ["B", "D", "F", "M"],
+            ["G"],
+            ["J", "Z"],
+            ["N", "Q", "R", "W"],
+            ["L"],
+            ["1", "2", "3", "4", "5", "6", "7", "S"],
+        ]
+
+        APIS = [
+            "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-ace",
+            "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-bdfm",
+            "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-g",
+            "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-jz",
+            "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-nqrw",
+            "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-l",
+            "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs",
+        ]
+
         self.api_key = API_KEY
 
         self.train_groups = []
@@ -18,35 +43,52 @@ class MTASubwayFeedHandler:
     def get_feed(self, train):
         for group in self.train_groups:
             if train in group.trains:
-                return NYCTFeed(group.api, api_key=self.api_key)
+                feed = NYCTFeed(group.api, api_key=self.api_key)
+                return feed.filter_trips(line_id=train)
 
 
-def start_application():
-    API_KEY = "MsGGWvRfMp2sunZAbEHnb7ZkXkIlDCw72fK8KTmc"
+class App:
+    def __init__(self):
+        self.handler = MTASubwayFeedHandler()
+        # set a default line to watch
+        self.set_train("A")
 
-    TRAINS = [
-        ["A", "C", "E"],
-        ["B", "D", "F", "M"],
-        ["G"],
-        ["J", "Z"],
-        ["N", "Q", "R", "W"],
-        ["L"],
-        ["1", "2", "3", "4", "5", "6", "7", "S"],
-    ]
+    def set_train(self, train):
+        self.train = train
 
-    APIS = [
-        "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-ace",
-        "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-bdfm",
-        "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-g",
-        "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-jz",
-        "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-nqrw",
-        "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-l",
-        "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs",
-    ]
+    def start_app(self):
+        schedule.every(2).seconds.do(self.background_job)
+        # Start the background thread
+        self.stop_run_continuously = self.run_continuously()
 
-    return MTASubwayFeedHandler(API_KEY, TRAINS, APIS)
+    def stop_update(self):
+        # Stop the background thread
+        self.stop_run_continuously.set()
 
+    def run_continuously(self, interval=1):
+        """Continuously run, while executing pending jobs at each
+        elapsed time interval.
+        @return cease_continuous_run: threading. Event which can
+        be set to cease continuous run. Please note that it is
+        *intended behavior that run_continuously() does not run
+        missed jobs*. For example, if you've registered a job that
+        should run every minute and you set a continuous run
+        interval of one hour then your job won't be run 60 times
+        at each interval but only once.
+        """
+        cease_continuous_run = threading.Event()
 
-handler = start_application()
-feed = handler.get_feed("A")
-print(feed.trips[0])
+        class ScheduleThread(threading.Thread):
+            @classmethod
+            def run(cls):
+                while not cease_continuous_run.is_set():
+                    schedule.run_pending()
+                    time.sleep(interval)
+
+        continuous_thread = ScheduleThread()
+        continuous_thread.start()
+        return cease_continuous_run
+
+    def background_job(self):
+        feed = self.handler.get_feed(self.train)
+        print(feed[0])
