@@ -1,63 +1,28 @@
-from nyct_gtfs import NYCTFeed
+from mtafeedhandler import MTASubwayFeedHandler
+
 import threading
 import schedule
 import time
 
 
-class TrainGroup:
-    def __init__(self, trains, api):
-        self.trains = trains
-        self.api = api
-
-
-class MTASubwayFeedHandler:
-    def __init__(self):
-        API_KEY = "MsGGWvRfMp2sunZAbEHnb7ZkXkIlDCw72fK8KTmc"
-
-        TRAINS = [
-            ["A", "C", "E"],
-            ["B", "D", "F", "M"],
-            ["G"],
-            ["J", "Z"],
-            ["N", "Q", "R", "W"],
-            ["L"],
-            ["1", "2", "3", "4", "5", "6", "7", "S"],
-        ]
-
-        APIS = [
-            "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-ace",
-            "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-bdfm",
-            "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-g",
-            "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-jz",
-            "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-nqrw",
-            "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-l",
-            "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs",
-        ]
-
-        self.api_key = API_KEY
-
-        self.train_groups = []
-        for train_list, api in zip(TRAINS, APIS):
-            self.train_groups.append(TrainGroup(train_list, api))
-
-    def get_feed(self, train):
-        for group in self.train_groups:
-            if train in group.trains:
-                feed = NYCTFeed(group.api, api_key=self.api_key)
-                return feed.filter_trips(line_id=train)
-
-
 class App:
     def __init__(self):
-        self.handler = MTASubwayFeedHandler()
-        # set a default line to watch
-        self.set_train("A")
+        self.feed_handler = MTASubwayFeedHandler()
 
     def set_train(self, train):
-        self.train = train
+        self.feed_handler.train = train
 
-    def start_update(self):
-        schedule.every(2).seconds.do(self.update_train)
+    def get_train(self):
+        return self.feed_handler.train
+
+    def set_station(self, station):
+        self.feed_handler.station = station
+
+    def get_station(self):
+        return self.feed_handler.station
+
+    def start_update_train(self):
+        schedule.every(2).seconds.do(self.update_feed)
         # Start the background thread
         self.stop_run_continuously = self.run_continuously()
 
@@ -89,6 +54,23 @@ class App:
         continuous_thread.start()
         return cease_continuous_run
 
-    def update_train(self):
-        feed = self.handler.get_feed(self.train)
-        print(feed[0])
+    def update_feed(self):
+        feed = self.feed_handler.get_feed()
+        stops = self.update_station_arrivals(feed)
+        for stop in stops:
+            print(f"{self.get_train()} train is expected to arrive at {self.get_station()} at {stop.arrival}")
+
+    def update_station_arrivals(self,feed):
+        stop_list = []
+        for trip in feed:
+            for stop in trip.stop_time_updates:
+                if stop.stop_id == self.get_station():
+                    stop_list.append(stop)
+                    break
+        if stop_list.__len__() > 2:
+            return stop_list[:2]
+        return stop_list
+    
+        ### TODO Check ID of trips to make sure I'm not adding duplicate trips to the update list
+
+
