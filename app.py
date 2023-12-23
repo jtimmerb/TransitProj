@@ -3,11 +3,12 @@ from mtafeedhandler import MTASubwayFeedHandler
 import threading
 import schedule
 import time
-
+from lcd import LCD_Controller
 
 class App:
     def __init__(self):
         self.feed_handler = MTASubwayFeedHandler()
+        self.lcd = LCD_Controller()
 
     def set_train(self, train):
         self.feed_handler.train = train
@@ -57,8 +58,8 @@ class App:
     def update_feed(self):
         feed = self.feed_handler.get_feed()
         stops = self.update_station_arrivals(feed)
-        for stop in stops:
-            print(f"{self.get_train()} train is expected to arrive at {self.get_station()} at {stop.arrival}")
+        for stop, line in zip(stops,[1,2]):
+            self.lcd.write_to_disp(f"{self.get_train()} train is expected to arrive at {self.get_station()} at {stop.arrival}", line)
 
     def update_station_arrivals(self,feed):
         stop_list = []
@@ -72,5 +73,3 @@ class App:
         return stop_list
     
         ### TODO Check ID of trips to make sure I'm not adding duplicate trips to the update list
-
-
