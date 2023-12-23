@@ -59,7 +59,7 @@ class App:
         feed = self.feed_handler.get_feed()
         stops = self.update_station_arrivals(feed)
         for stop, line in zip(stops,[1,2]):
-            self.lcd.write_to_disp(f"{self.get_train()} at {self.get_station()} at {stop.arrival.time}", line)
+            self.lcd.write_to_disp(f"{self.get_train()} at {self.get_station()} at {stop.arrival.hour}:{stop.arrival.minute}", line)
 
     def update_station_arrivals(self,feed):
         stop_list = []
