@@ -8,8 +8,10 @@ class LCD_Controller:
     
     def write_to_disp(self, msg, line):
         # Write line of text to first line of display
-        print("Writing to display")
-        self.display.lcd_display_string(msg, line)  
+        try:
+            self.display.lcd_display_string(msg, line)
+        except KeyboardInterrupt:
+            self.clear_display()
 
     def clear_display(self):
         print("Cleaning up!")
