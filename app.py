@@ -25,8 +25,8 @@ class App:
         return self.feed_handler.station
 
     def start_update_train(self):
-        schedule.every(5).seconds.do(self.update_feed)
-        schedule.every(10).seconds.do(self.print_header)
+        schedule.every(10).seconds.do(self.update_feed)
+        schedule.every(15).seconds.do(self.print_header)
         # Start the background thread
         self.stop_run_continuously = self.run_continuously()
 
@@ -61,6 +61,7 @@ class App:
     def print_header(self):
         self.lcd.write_to_disp(f"Next {self.get_train()} Trains at", 1)
         self.lcd.write_to_disp(f"{self.station_handler.get_station_name(self.get_station())}", 2)
+
 
     def update_feed(self):
         self.lcd.clear_display()

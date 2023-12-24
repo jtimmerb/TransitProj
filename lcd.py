@@ -7,12 +7,16 @@ class LCD_Controller:
         self.display = drivers.Lcd()
     
     def write_to_disp(self, msg, line):
-        # Write line of text to first line of display
+        # Write line of text to the specified line of the display
+        # 1 - top line
+        # 2 - bottom line
+        # print(f"print to line {line}")
         try:
             self.display.lcd_display_string(msg, line)
         except KeyboardInterrupt:
             self.clear_display()
 
     def clear_display(self):
-        print("Cleaning up!")
+        # clear LCD
+        # print("clearing display")
         self.display.lcd_clear()
