@@ -63,10 +63,14 @@ class App:
         self.lcd.write_to_disp(f"{self.station_handler.get_station_name(self.get_station())}", 2)
 
     def update_feed(self):
+        self.lcd.clear_display()
         feed = self.feed_handler.get_feed()
         stops = self.update_station_arrivals(feed)
         for line, stop in enumerate(iterable=stops, start=1):
-            self.lcd.write_to_disp(f"{stop.arrival.hour}:{stop.arrival.minute}", line)
+            minute = stop.arrival.minute
+            if stop.arrival.minute < 10:
+                minute = "0" + str(stop.arrival.minute)
+            self.lcd.write_to_disp(f"{stop.arrival.hour}:{minute}", line)
 
     def update_station_arrivals(self,feed):
         stop_list = []
