@@ -3,13 +3,13 @@ from mtafeedhandler import MTASubwayFeedHandler
 import threading
 import schedule
 import time
-# from lcd import LCD_Controller
+from lcd import LCD_Controller
 from nyct_gtfs import Stations
 
 class App:
     def __init__(self):
         self.feed_handler = MTASubwayFeedHandler()
-        # self.lcd = LCD_Controller()
+        self.lcd = LCD_Controller()
         self.station_handler = Stations("stops.txt")
 
     def set_train(self, train):
@@ -25,7 +25,8 @@ class App:
         return self.feed_handler.station
 
     def start_update_train(self):
-        schedule.every(2).seconds.do(self.update_feed)
+        schedule.every(5).seconds.do(self.update_feed)
+        schedule.every(10).seconds.do(self.print_header)
         # Start the background thread
         self.stop_run_continuously = self.run_continuously()
 
@@ -57,14 +58,15 @@ class App:
         continuous_thread.start()
         return cease_continuous_run
 
+    def print_header(self):
+        self.lcd.write_to_disp(f"Next {self.get_train()} Trains at", 1)
+        self.lcd.write_to_disp(f"{self.station_handler.get_station_name(self.get_station())}", 2)
+
     def update_feed(self):
         feed = self.feed_handler.get_feed()
         stops = self.update_station_arrivals(feed)
-        print(f"Next {self.get_train()} Trains at")
-        print(f"{self.station_handler.get_station_name(self.get_station())}")
         for line, stop in enumerate(iterable=stops, start=1):
-            # self.lcd.write_to_disp(f"{self.get_train()} at {self.get_station()} {stop.arrival.hour}:{stop.arrival.minute}", line)
-            print(f"{stop.arrival.hour}:{stop.arrival.minute}")
+            self.lcd.write_to_disp(f"{stop.arrival.hour}:{stop.arrival.minute}", line)
 
     def update_station_arrivals(self,feed):
         stop_list = []
