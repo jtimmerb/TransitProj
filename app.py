@@ -3,12 +3,14 @@ from mtafeedhandler import MTASubwayFeedHandler
 import threading
 import schedule
 import time
-from lcd import LCD_Controller
+# from lcd import LCD_Controller
+from nyct_gtfs import Stations
 
 class App:
     def __init__(self):
         self.feed_handler = MTASubwayFeedHandler()
-        self.lcd = LCD_Controller()
+        # self.lcd = LCD_Controller()
+        self.station_handler = Stations("stops.txt")
 
     def set_train(self, train):
         self.feed_handler.train = train
@@ -58,8 +60,11 @@ class App:
     def update_feed(self):
         feed = self.feed_handler.get_feed()
         stops = self.update_station_arrivals(feed)
-        for stop, line in zip(stops,[1,2]):
-            self.lcd.write_to_disp(f"{self.get_train()} at {self.get_station()} {stop.arrival.hour}:{stop.arrival.minute}", line)
+        print(f"Next {self.get_train()} Trains at")
+        print(f"{self.station_handler.get_station_name(self.get_station())}")
+        for line, stop in enumerate(iterable=stops, start=1):
+            # self.lcd.write_to_disp(f"{self.get_train()} at {self.get_station()} {stop.arrival.hour}:{stop.arrival.minute}", line)
+            print(f"{stop.arrival.hour}:{stop.arrival.minute}")
 
     def update_station_arrivals(self,feed):
         stop_list = []
